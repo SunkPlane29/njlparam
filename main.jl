@@ -3,7 +3,6 @@ begin
     using StaticArrays
     using Turing
     using StatsPlots
-    using CairoMakie
 end
 
 begin
@@ -61,10 +60,11 @@ begin
 
     model = njlparams(fpivals, mpivals, condvals)
 
-    chain = sample(model, NUTS(), 1000)
+    chain = sample(model, NUTS(0.65), 2000)
 end
 
 begin
-   plot(chain) 
+    StatsPlots.plot(chain)
 end
 
+chain
