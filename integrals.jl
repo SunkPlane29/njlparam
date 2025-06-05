@@ -16,11 +16,12 @@ function solvegap(Lamb, G, mc)
 end
 
 function mpiint(q, M, Lamb)
-    1/8π^2 * (log((Lamb + sqrt(Lamb^2 + M^2))/M) - sqrt(4M^2/q^2 - 1) * atan(Lamb/(sqrt(Lamb^2 + M^2)*sqrt(4M^2/q^2 - 1))))
+    @assert q < 2M "q must be lesser than 2M"
+    1/8π^2 * (1/2 * log((Lamb + sqrt(Lamb^2 + M^2))^2/M^2) - sqrt(4M^2/q^2 - 1) * atan(Lamb/(sqrt(Lamb^2 + M^2)*sqrt(4M^2/q^2 - 1))))
 end
 
-function fpieq(fpi, M, Lamb)
-    fpi^2 - 4*Nc*M^2*fpiint(M, Lamb)
+function fpieq(M, Lamb)
+    sqrt(4*Nc*M^2*fpiint(M, Lamb))
 end
 
 function gapint(M, Lamb)
@@ -32,9 +33,18 @@ function Mgap(M, Lamb, G, mc)
 end
 
 function mpieq(mpi, M, Lamb, G, mc)
-    println(mc/M)
-    println(- 4G*Nf*Nc*mpi^2*mpiint(mpi, M, Lamb))
     mc/M - 4G*Nf*Nc*mpi^2*mpiint(mpi, M, Lamb)
+end
+
+function mpisys!(du, u, p)
+    du[1] = mpieq(u[1], p[1], p[2], p[3], p[4])
+end
+
+function getmpi(M, Lamb, G, mc)
+    u0 = SA[0.135]
+    prob = NonlinearProblem(mpisys!, u0, SA[M, Lamb, G, mc])
+    sol = solve(prob, SimpleNewtonRaphson())
+    return sol.u[1]
 end
 
 function quarkcond(M, Lamb, G, mc)

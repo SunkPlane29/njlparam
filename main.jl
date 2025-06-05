@@ -1,15 +1,15 @@
 begin
     using NonlinearSolve
     using StaticArrays
+    using Turing
+    using StatsPlots
+    using CairoMakie
 end
 
 begin
     include("integrals.jl")
     include("param.jl")
 end
-
-fpieq(0.0924, 0.3, 0.64)
-mpieq(0.135, 0.3, 0.64, 1.97653/0.64^2, 0.005)
 
 let
     fpi = 0.0924
@@ -18,6 +18,53 @@ let
 
     solvec = @MArray zeros(5)
     getparam_Lambin(Lamb, fpi, mpi, solvec)
-
-    println(solvec)
+    solvec
 end
+
+begin
+    meanfpi = 0.0924
+    sigfpi = 2e-3
+
+    meanmpi = 0.1349768
+    sigmpi = 5e-7
+
+    acbcond = 0.190 
+    bcbcond = 0.260
+    sigcond = sqrt(1/12 * (0.260 - 0.190)^2)
+end
+
+@model function njlparams(fpi, mpi, cond)
+    Lamb ~ Uniform(0.580, 0.700)
+    G ~ Uniform(1.5/0.700^2, 2.5/0.580^2)
+    mc ~ Uniform(0.004, 0.006)
+
+    Mmodel = solvegap(Lamb, G, mc)
+    fpimodel = fpieq(Mmodel, Lamb)
+    mpimodel = getmpi(Mmodel, Lamb, G, mc)
+    condmodel = -cbrt(quarkcond(Mmodel, Lamb, G, mc))
+
+    fpi ~ Normal(fpimodel, sigfpi)
+    mpi ~ Normal(mpimodel, sigmpi)
+    cond ~ Normal(condmodel, sigcond)
+end
+
+# You have to run a lot of times until you stop getting errors, I think this has something to do with the
+# initial values of the parameters
+begin
+    fpidist = Normal(meanfpi, sigfpi)
+    mpidist = Normal(meanmpi, sigmpi)
+    conddist = Uniform(acbcond, bcbcond)
+
+    fpivals = rand(fpidist, 1000)
+    mpivals = rand(mpidist, 1000)
+    condvals = rand(conddist, 1000)
+
+    model = njlparams(fpivals, mpivals, condvals)
+
+    chain = sample(model, NUTS(), 1000)
+end
+
+begin
+   plot(chain) 
+end
+

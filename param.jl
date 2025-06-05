@@ -1,6 +1,6 @@
 function mpifpisys_Lambin!(du, u, p)
     du[1] = Mgap(u[1], p[1], u[2], u[3])
-    du[1] = fpieq(p[2], u[1], p[1])
+    du[1] = p[2] - fpieq(u[1], p[1])
     du[2] = mpieq(p[3], u[1], p[1], u[2], u[3])
 end
 
