@@ -67,4 +67,10 @@ begin
     StatsPlots.plot(chain)
 end
 
-chain
+begin
+    fig = Figure()
+    ax = Axis(fig[1, 1], xlabel=L"$\Lambda \text{ [GeV]}$", ylabel=L"$G \text{ [GeV}^{-2}]$",
+              title="NJL model parameters")
+    CairoMakie.scatter!(ax, chain[:Lamb][:,1], chain[:G][:,1])
+    fig
+end
