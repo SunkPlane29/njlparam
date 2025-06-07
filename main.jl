@@ -30,10 +30,13 @@ begin
     acbcond = 0.190 
     bcbcond = 0.260
     sigcond = sqrt(1/12 * (0.260 - 0.190)^2)
+
+    fixedLamb = 0.64
 end
 
 @model function njlparams(fpi, mpi, cond)
-    Lamb ~ Uniform(0.580, 0.700)
+    # Lamb ~ Uniform(0.580, 0.700)
+    Lamb = fixedLamb
     G ~ Uniform(1.5/0.700^2, 2.5/0.580^2)
     mc ~ Uniform(0.004, 0.006)
 
@@ -60,17 +63,17 @@ begin
 
     model = njlparams(fpivals, mpivals, condvals)
 
-    chain = sample(model, NUTS(0.65), 2000)
+    chain = sample(model, NUTS(0.65), 4000)
 end
 
 begin
-    StatsPlots.plot(chain)
-end
+    x = chain[:G][:,1]
+    y = chain[:mc][:,1]
 
-begin
-    fig = Figure()
-    ax = Axis(fig[1, 1], xlabel=L"$\Lambda \text{ [GeV]}$", ylabel=L"$G \text{ [GeV}^{-2}]$",
-              title="NJL model parameters")
-    CairoMakie.scatter!(ax, chain[:Lamb][:,1], chain[:G][:,1])
-    fig
+    #I want to only take x values higher than 5.18 and yvalues higher than 5.17,
+    #and y mathcing the x values
+    x_filtered = x[x .> 5.18]
+    y_filtered = y[x .> 5.18]
+
+    marginalkde(x_filtered, y_filtered*1e3, levels=4, xlabel=raw"$G$ [GeV$^{-2}$]", ylabel=raw"$m$ [MeV]")
 end

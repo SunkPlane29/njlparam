@@ -21,6 +21,7 @@ function mpiint(q, M, Lamb)
 end
 
 function fpieq(M, Lamb)
+    @assert fpiint(M, Lamb) > 0 "fpiint must be positive"
     sqrt(4*Nc*M^2*fpiint(M, Lamb))
 end
 
