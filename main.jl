@@ -1,3 +1,7 @@
+#NOTE: References:
+# S. P. Klevansky, The Nambu--Jona-Lasinio model of quantum chromodynamics, Rev. Mod. Phys. 64, 649 – Published 1 July, 1992
+# Michael Buballa, NJL-model analysis of dense quark matter, Physics Reports, Volume 407, Issues 4–6, 2005
+
 begin
     using NonlinearSolve
     using StaticArrays
