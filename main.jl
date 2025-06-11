@@ -17,7 +17,7 @@ let
 
     solvec = @MArray zeros(5)
     getparam_Lambin(Lamb, fpi, mpi, solvec)
-    solvec
+    println(solvec)
 end
 
 begin
@@ -66,6 +66,14 @@ begin
     chain = sample(model, NUTS(0.65), 4000)
 end
 
+chain
+
+begin
+    describe(chain)
+    plot(chain)
+    savefig("chain.png")
+end
+
 begin
     x = chain[:G][:,1]
     y = chain[:mc][:,1]
@@ -76,4 +84,5 @@ begin
     y_filtered = y[x .> 5.18]
 
     marginalkde(x_filtered, y_filtered*1e3, levels=4, xlabel=raw"$G$ [GeV$^{-2}$]", ylabel=raw"$m$ [MeV]")
+    savefig("marginalkde.png")
 end
