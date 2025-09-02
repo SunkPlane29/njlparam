@@ -11,8 +11,6 @@ function getparam_Lambin(Lamb, fpi, mpi, solvec)
     prob = NonlinearProblem(mpifpisys_Lambin!, u0, p)
     sol = solve(prob, SimpleKlement(), abstol=1e-8)
 
-    # println(sol)
-    # println(sol.resid)
     solvec[1] = sol.u[1]
     solvec[2] = Lamb
     solvec[3] = sol.u[2]

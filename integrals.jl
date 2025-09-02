@@ -16,11 +16,17 @@ function solvegap(Lamb, G, mc)
 end
 
 function mpiint(q, M, Lamb)
+    # println("q = $q, M = $M, Lamb = $Lamb")
     @assert q < 2M "q must be lesser than 2M"
     1/8π^2 * (1/2 * log((Lamb + sqrt(Lamb^2 + M^2))^2/M^2) - sqrt(4M^2/q^2 - 1) * atan(Lamb/(sqrt(Lamb^2 + M^2)*sqrt(4M^2/q^2 - 1))))
 end
 
 function fpieq(M, Lamb)
+    # println("M = $M, Lamb = $Lamb")
+    if isnan(M) || M < 0.0
+        return 0.0
+    end
+
     @assert fpiint(M, Lamb) > 0 "fpiint must be positive"
     sqrt(4*Nc*M^2*fpiint(M, Lamb))
 end
@@ -42,6 +48,10 @@ function mpisys!(du, u, p)
 end
 
 function getmpi(M, Lamb, G, mc)
+    if M < 0.135 || isnan(M)
+        return 0.0
+    end
+
     u0 = SA[0.135]
     prob = NonlinearProblem(mpisys!, u0, SA[M, Lamb, G, mc])
     sol = solve(prob, SimpleNewtonRaphson())

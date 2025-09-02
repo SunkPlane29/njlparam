@@ -2,24 +2,24 @@
 # S. P. Klevansky, The Nambu--Jona-Lasinio model of quantum chromodynamics, Rev. Mod. Phys. 64, 649 – Published 1 July, 1992
 # Michael Buballa, NJL-model analysis of dense quark matter, Physics Reports, Volume 407, Issues 4–6, 2005
 
-begin
-    using NonlinearSolve
-    using StaticArrays
-    using Turing
-    using StatsPlots
-end
+using NonlinearSolve
+using StatsPlots
+using Serialization
+using NestedSamplers
+using Revise
+using AbstractMCMC
+using StaticArrays
+using Distributions
 
-begin
-    include("integrals.jl")
-    include("param.jl")
-end
+includet("integrals.jl")
+includet("param.jl")
 
-let
+function deterministic_params()
     fpi = 0.0924
     mpi = 0.135
     Lamb = 0.64
 
-    solvec = @MArray zeros(5)
+    solvec = zeros(5)
     getparam_Lambin(Lamb, fpi, mpi, solvec)
     println(solvec)
 end
@@ -31,62 +31,58 @@ begin
     meanmpi = 0.1349768
     sigmpi = 5e-7
 
-    acbcond = 0.190 
-    bcbcond = 0.260
-    sigcond = sqrt(1/12 * (0.260 - 0.190)^2)
+    cond_lb = 0.190 
+    cond_ub = 0.260
 
     fixedLamb = 0.64
 end
 
-@model function njlparams(fpi, mpi, cond)
-    # Lamb ~ Uniform(0.580, 0.700)
-    Lamb = fixedLamb
-    G ~ Uniform(1.5/0.700^2, 2.5/0.580^2)
-    mc ~ Uniform(0.004, 0.006)
+function loglike(theta::AbstractVector)
+    Lambda, G, mc = theta  
 
-    Mmodel = solvegap(Lamb, G, mc)
-    fpimodel = fpieq(Mmodel, Lamb)
-    mpimodel = getmpi(Mmodel, Lamb, G, mc)
-    condmodel = -cbrt(quarkcond(Mmodel, Lamb, G, mc))
+    M = solvegap(Lambda, G, mc)
+    mpi = getmpi(M, Lambda, G, mc)
+    fpi = fpieq(M, Lambda)
+    cond = -cbrt(quarkcond(M, Lambda, G, mc))
+    
+    #condensate uniform likelihood works to truncate the likelihood
+    if cond < cond_lb || cond > cond_ub
+        return -Inf
+    end
 
-    fpi ~ Normal(fpimodel, sigfpi)
-    mpi ~ Normal(mpimodel, sigmpi)
-    cond ~ Normal(condmodel, sigcond)
+    total_logL = 0.0
+
+    total_logL += logpdf(Normal(meanmpi, sigmpi), mpi)
+    total_logL += logpdf(Normal(meanfpi, sigfpi), fpi)
+
+    return total_logL
 end
 
-# You have to run a lot of times until you stop getting errors, I think this has something to do with the
-# initial values of the parameters
-begin
-    fpidist = Normal(meanfpi, sigfpi)
-    mpidist = Normal(meanmpi, sigmpi)
-    conddist = Uniform(acbcond, bcbcond)
+function priortransform(u::AbstractVector)
+    theta = zeros(eltype(u), length(u))
 
-    fpivals = rand(fpidist, 1000)
-    mpivals = rand(mpidist, 1000)
-    condvals = rand(conddist, 1000)
+    theta[1] = 0.580 + (0.700 - 0.580) * u[1]
+    theta[2] = 1.5/0.700^2 + (2.5/0.580^2 - 1.5/0.700^2) * u[2]
+    theta[3] = 0.004 + (0.006 - 0.004) * u[3]
 
-    model = njlparams(fpivals, mpivals, condvals)
-
-    chain = sample(model, NUTS(0.65), 4000)
+    return theta
 end
 
-chain
+function nestedsampling_chain()
+    ndims = 3
+    nlive = 5_000
+    sampler = Nested(ndims, nlive)
+    model = NestedModel(loglike, priortransform)
+    
+    println("Starting nested sampling...")
+    chain = NestedSamplers.sample(model, sampler, dlogz=0.01)
+    println("Nested sampling completed.")
 
-begin
-    describe(chain)
-    plot(chain)
-    savefig("chain.png")
+    serialize("njlparameters_chain.jls", chain)
 end
 
-begin
-    x = chain[:G][:,1]
-    y = chain[:mc][:,1]
-
-    #I want to only take x values higher than 5.18 and yvalues higher than 5.17,
-    #and y mathcing the x values
-    x_filtered = x[x .> 5.18]
-    y_filtered = y[x .> 5.18]
-
-    marginalkde(x_filtered, y_filtered*1e3, levels=4, xlabel=raw"$G$ [GeV$^{-2}$]", ylabel=raw"$m$ [MeV]")
-    savefig("marginalkde.png")
+function plotchain()
+    chain = deserialize("njlparameters_chain.jls")
+    plot(chain[1])
+    savefig("njlparameters_chain.png")
 end
