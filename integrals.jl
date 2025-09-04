@@ -1,8 +1,9 @@
 Nf = 2
 Nc = 3
 
+# Verificado por Arthur EBP 04/09/2025
 function fpiint(M, Lamb)
-    1/8π^2 * (asinh(Lamb/M) - Lamb/sqrt(Lamb^2 + M^2)) 
+    1/8π^2 * (asinh(Lamb/M) - Lamb/sqrt(Lamb^2 + M^2)) # ok 
 end
 
 function gapsys!(du, u, p)
@@ -17,7 +18,7 @@ end
 
 function mpiint(q, M, Lamb)
     # println("q = $q, M = $M, Lamb = $Lamb")
-    @assert q < 2M "q must be lesser than 2M"
+    @assert q < 2M "q must be lesser than 2M" # ok 
     1/8π^2 * (1/2 * log((Lamb + sqrt(Lamb^2 + M^2))^2/M^2) - sqrt(4M^2/q^2 - 1) * atan(Lamb/(sqrt(Lamb^2 + M^2)*sqrt(4M^2/q^2 - 1))))
 end
 

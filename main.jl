@@ -1,6 +1,7 @@
 #NOTE: References:
 # S. P. Klevansky, The Nambu--Jona-Lasinio model of quantum chromodynamics, Rev. Mod. Phys. 64, 649 – Published 1 July, 1992
 # Michael Buballa, NJL-model analysis of dense quark matter, Physics Reports, Volume 407, Issues 4–6, 2005
+# Dyana Cristine Duarte, ESTRUTURA DE FASES DA MATÉRIA DE QUARKS QUENTE, DENSA E MAGNETIZADA NO MODELO DE NAMBU–JONA-LASINIO
 
 using NonlinearSolve
 using StatsPlots
@@ -11,6 +12,7 @@ using AbstractMCMC
 using StaticArrays
 using Distributions
 using DataFrames
+using CSV
 
 includet("integrals.jl")
 includet("param.jl")
@@ -60,10 +62,16 @@ end
 
 function priortransform(u::AbstractVector)
     theta = zeros(eltype(u), length(u))
+    L_min = 0.45
+    L_max = 0.85
+    G_min = 1.5/L_max^2
+    G_max = 2.5/L_min^2
+    mc_min = 0.003
+    mc_max = 0.007
 
-    theta[1] = 0.580 + (0.700 - 0.580) * u[1]
-    theta[2] = 1.5/0.700^2 + (2.5/0.580^2 - 1.5/0.700^2) * u[2]
-    theta[3] = 0.004 + (0.006 - 0.004) * u[3]
+    theta[1] = L_min + (L_max - L_min) * u[1]
+    theta[2] = G_min + (G_max - G_min) * u[2]
+    theta[3] = mc_min + (mc_max - mc_min) * u[3]
 
     return theta
 end
@@ -75,7 +83,7 @@ function nestedsampling_chain()
     model = NestedModel(loglike, priortransform)
     
     println("Starting nested sampling...")
-    chain = NestedSamplers.sample(model, sampler, dlogz=0.05)
+    chain = NestedSamplers.sample(model, sampler, dlogz=0.1) # Aumentei um pouco o dlogz 
     println("Nested sampling completed.")
 
     serialize("njlparameters_chain.jls", chain)
@@ -85,4 +93,11 @@ function plotchain()
     chain = deserialize("njlparameters_chain.jls")
     plot(chain[1])
     savefig("njlparameters_chain.png")
+end
+
+function chain_to_csv(burnin=1)
+    df = DataFrame(deserialize("njlparameters_chain.jls")[1])
+    df = df[burnin:end, :]
+    rename!(df, [:iter, :chain, :Lamb, :GL2, :mc, :w])
+    CSV.write("njlparameters_chain.csv", df)
 end
