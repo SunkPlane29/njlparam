@@ -10,6 +10,7 @@ using Revise
 using AbstractMCMC
 using StaticArrays
 using Distributions
+using DataFrames
 
 includet("integrals.jl")
 includet("param.jl")
@@ -21,7 +22,6 @@ function deterministic_params()
 
     solvec = zeros(5)
     getparam_Lambin(Lamb, fpi, mpi, solvec)
-    println(solvec)
 end
 
 begin
@@ -70,12 +70,12 @@ end
 
 function nestedsampling_chain()
     ndims = 3
-    nlive = 5_000
+    nlive = 20_000
     sampler = Nested(ndims, nlive)
     model = NestedModel(loglike, priortransform)
     
     println("Starting nested sampling...")
-    chain = NestedSamplers.sample(model, sampler, dlogz=0.01)
+    chain = NestedSamplers.sample(model, sampler, dlogz=0.05)
     println("Nested sampling completed.")
 
     serialize("njlparameters_chain.jls", chain)

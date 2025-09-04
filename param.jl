@@ -1,7 +1,7 @@
-function mpifpisys_Lambin!(du, u, p)
-    du[1] = Mgap(u[1], p[1], u[2], u[3])
-    du[1] = p[2] - fpieq(u[1], p[1])
-    du[2] = mpieq(p[3], u[1], p[1], u[2], u[3])
+function mpifpisys_Lambin!(f, u, p)
+    f[1] = Mgap(u[1], p[1], u[2], u[3])
+    f[2] = p[2] - fpieq(u[1], p[1])
+    f[3] = mpieq(p[3], u[1], p[1], u[2], u[3])
 end
 
 function getparam_Lambin(Lamb, fpi, mpi, solvec)
@@ -9,7 +9,7 @@ function getparam_Lambin(Lamb, fpi, mpi, solvec)
     p = SA[Lamb, fpi, mpi]
 
     prob = NonlinearProblem(mpifpisys_Lambin!, u0, p)
-    sol = solve(prob, SimpleKlement(), abstol=1e-8)
+    sol = solve(prob, SimpleNewtonRaphson(), abstol=1e-8)
 
     solvec[1] = sol.u[1]
     solvec[2] = Lamb

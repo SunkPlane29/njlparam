@@ -1,5 +1,6 @@
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 NestedSamplers = "41ceaf6f-1696-4a54-9b49-2e7a9ec3782e"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
