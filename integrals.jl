@@ -36,8 +36,18 @@ function gapint(M, Lamb)
     1/4π^2 * (Lamb*sqrt(Lamb^2 + M^2) - M^2/2 * log((Lamb + sqrt(Lamb^2 + M^2))^2/M^2))
 end
 
+# Vanishing chemical potential fermi-dirac distribution integral 
+function gap_Tint(M,T)
+    1/2π^2*quadgk(k->k^2/(1+exp(sqrt(k^2+M^2)/T)),0.0,Inf64,maxevals=16)[1]
+end
+
 function Mgap(M, Lamb, G, mc)
     M - mc - 4G*Nf*Nc*M*gapint(M, Lamb)
+end
+
+# Usando despacho múltiplo
+function Mgap(M, Lamb, G, mc,T)
+    M - mc - 4G*Nf*Nc*M*(gapint(M, Lamb)-gap_Tint(M,T))
 end
 
 function mpieq(mpi, M, Lamb, G, mc)

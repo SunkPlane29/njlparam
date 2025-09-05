@@ -3,6 +3,13 @@
 # Michael Buballa, NJL-model analysis of dense quark matter, Physics Reports, Volume 407, Issues 4–6, 2005
 # Dyana Cristine Duarte, ESTRUTURA DE FASES DA MATÉRIA DE QUARKS QUENTE, DENSA E MAGNETIZADA NO MODELO DE NAMBU–JONA-LASINIO
 
+# Reference to the Pseudocritical Temperature from Lattice QCD
+# From HotQCD Collaboration, A. Bazavov et al.
+# https://arxiv.org/pdf/1812.08235
+# Tpc = 156.5 ± 1.5 MeV
+# TODO: 
+# [ ] Implementar uma função que calcule o Tpc a partir dos parâmetros do modelo NJL 
+
 using NonlinearSolve
 using StatsPlots
 using Serialization
@@ -13,6 +20,7 @@ using StaticArrays
 using Distributions
 using DataFrames
 using CSV
+using QuadGK
 
 includet("integrals.jl")
 includet("param.jl")
@@ -38,6 +46,9 @@ begin
     cond_lattice = 0.231 # valor central da lattice
     sigcond = 0.008 # erro estimado
 
+    Lattice_Tpc = 0.1565
+    Lattice_Tpc_err = 0.0015
+
     fixedLamb = 0.64
 end
 
@@ -50,16 +61,18 @@ function loglike(theta::AbstractVector)
     fpi = fpieq(M, Lambda)
     cond = -cbrt(quarkcond(M, Lambda, G, mc))
     
-    #condensate uniform likelihood works to truncate the likelihood
-    #if cond < cond_lb || cond > cond_ub
-    #    return -Inf
-    #end
+
+    # condensate uniform likelihood works to truncate the likelihood
+    if cond < cond_lb || cond > cond_ub
+        return -Inf
+    end
 
     total_logL = 0.0
 
-    total_logL += logpdf(Normal(cond_lattice, sigcond), cond)
+    # total_logL += logpdf(Normal(cond_lattice, sigcond), cond)
     total_logL += logpdf(Normal(meanmpi, sigmpi), mpi)
     total_logL += logpdf(Normal(meanfpi, sigfpi), fpi)
+    # total_logL += logpdf(Normal(Lattice_Tpc, Lattice_Tpc_err), Tpc(Lambda, G, mc))
 
     return total_logL
 end
