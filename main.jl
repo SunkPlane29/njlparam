@@ -10,29 +10,35 @@
 # TODO: 
 # [ ] Implementar uma função que calcule o Tpc a partir dos parâmetros do modelo NJL 
 
-using NonlinearSolve
-using StatsPlots
-using Serialization
-using NestedSamplers
-using Revise
-using AbstractMCMC
-using StaticArrays
-using Distributions
-using DataFrames
-using CSV
-using QuadGK
+# Adaptando pro meu workflow Arthur EBP 08/09/2025
+begin
+    using NonlinearSolve
+    using StatsPlots
+    using Serialization
+    using NestedSamplers
+    using Revise
+    using AbstractMCMC
+    using StaticArrays
+    using Distributions
+    using DataFrames
+    using CSV
+    using QuadGK
+    using FixedPointAcceleration
+    using Plots
 
-includet("integrals.jl")
-includet("param.jl")
+    includet("integrals.jl")
+    includet("param.jl")
+end 
 
-function deterministic_params()
+function deterministic_params(;Lamb = 0.64)
     fpi = 0.0924
     mpi = 0.135
-    Lamb = 0.64
 
-    solvec = zeros(5)
+    solvec = zeros(6)
     getparam_Lambin(Lamb, fpi, mpi, solvec)
 end
+
+deterministic_params()
 
 begin
     meanfpi = 0.0924
@@ -60,6 +66,7 @@ function loglike(theta::AbstractVector)
     mpi = getmpi(M, Lambda, G, mc)
     fpi = fpieq(M, Lambda)
     cond = -cbrt(quarkcond(M, Lambda, G, mc))
+    T_pc = get_Tpc(Lambda, G, mc)
     
 
     # condensate uniform likelihood works to truncate the likelihood
@@ -72,7 +79,7 @@ function loglike(theta::AbstractVector)
     # total_logL += logpdf(Normal(cond_lattice, sigcond), cond)
     total_logL += logpdf(Normal(meanmpi, sigmpi), mpi)
     total_logL += logpdf(Normal(meanfpi, sigfpi), fpi)
-    # total_logL += logpdf(Normal(Lattice_Tpc, Lattice_Tpc_err), Tpc(Lambda, G, mc))
+    total_logL += logpdf(Normal(Lattice_Tpc, Lattice_Tpc_err), T_pc)
 
     return total_logL
 end
@@ -95,12 +102,12 @@ end
 
 function nestedsampling_chain()
     ndims = 3
-    nlive = 5_000
+    nlive = 1_000
     sampler = Nested(ndims, nlive)
     model = NestedModel(loglike, priortransform)
     
     println("Starting nested sampling...")
-    chain = NestedSamplers.sample(model, sampler, dlogz=0.1)
+    chain = NestedSamplers.sample(model, sampler, dlogz=1e2)
     println("Nested sampling completed.")
 
     serialize("njlparameters_chain.jls", chain)

@@ -16,4 +16,6 @@ function getparam_Lambin(Lamb, fpi, mpi, solvec)
     solvec[3] = sol.u[2]
     solvec[4] = sol.u[3]
     solvec[5] = -cbrt(quarkcond(sol.u[1], Lamb, sol.u[2], sol.u[3]))
+    solvec[6] = get_Tpc(Lamb, sol.u[2], sol.u[3]) # Lamb,G,mc 
+    return solvec
 end
