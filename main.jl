@@ -8,7 +8,7 @@
 # https://arxiv.org/pdf/1812.08235
 # Tpc = 156.5 ± 1.5 MeV
 # TODO: 
-# [ ] Implementar uma função que calcule o Tpc a partir dos parâmetros do modelo NJL 
+# [x] Implementar uma função que calcule o Tpc a partir dos parâmetros do modelo NJL 
 
 # Adaptando pro meu workflow Arthur EBP 08/09/2025
 begin
@@ -90,7 +90,7 @@ function priortransform(u::AbstractVector)
     L_max = 0.7
     GL2_min = 1.5
     GL2_max = 3.5
-    mc_min = 0.004
+    mc_min = 0.002
     mc_max = 0.006
 
     theta[1] = L_min + (L_max - L_min) * u[1]
@@ -102,12 +102,12 @@ end
 
 function nestedsampling_chain()
     ndims = 3
-    nlive = 1_000
+    nlive = 5_000
     sampler = Nested(ndims, nlive)
     model = NestedModel(loglike, priortransform)
     
     println("Starting nested sampling...")
-    chain = NestedSamplers.sample(model, sampler, dlogz=1e2)
+    chain = NestedSamplers.sample(model, sampler, dlogz=2e1)
     println("Nested sampling completed.")
 
     serialize("njlparameters_chain.jls", chain)
@@ -123,5 +123,9 @@ function chain_to_csv(burnin=1)
     df = DataFrame(deserialize("njlparameters_chain.jls")[1])
     df = df[burnin:end, :]
     rename!(df, [:iter, :chain, :Lamb, :GL2, :mc, :w])
+    df[!,"T_pc"] = [get_Tpc(row.Lamb, row.GL2 / row.Lamb^2, row.mc) for row in eachrow(df)]
+    # df["Cond"] = [-cbrt(quarkcond(row.Lamb, row.GL2 / row.Lamb^2, row.mc)) for row in eachrow(df)]
+    # df["mpi"] = [getmpi(solvegap(row.Lamb, row.GL2 / row.Lamb^2, row.mc), row.Lamb, row.GL2 / row.Lamb^2, row.mc) for row in eachrow(df)]
+    # df["fpi"] = [fpieq(solvegap(row.Lamb, row.GL2 / row.Lamb^2, row.mc), row.Lamb) for row in eachrow(df)]
     CSV.write("njlparameters_chain.csv", df)
 end
