@@ -42,7 +42,7 @@ deterministic_params()
 
 begin
     meanfpi = 0.0924
-    sigfpi = 2e-3
+    sigfpi = 5e-3
 
     meanmpi = 0.1349768
     sigmpi = 5e-7
@@ -58,16 +58,23 @@ begin
     fixedLamb = 0.64
 end
 
-function loglike(theta::AbstractVector)
-    Lambda, G, mc = theta  
-    G = G / Lambda^2 # eu entendo melhor assim :D
-
+function get_values(Lambda, G, mc)
     M = solvegap(Lambda, G, mc)
     mpi = getmpi(M, Lambda, G, mc)
     fpi = fpieq(M, Lambda)
     cond = -cbrt(quarkcond(M, Lambda, G, mc))
     T_pc = get_Tpc(Lambda, G, mc)
-    
+
+    return M, mpi, fpi, cond, T_pc
+end
+
+# plot(LinRange(1.0,3.0,200),x->get_values(0.45,x/(0.45^2),0.003)[end])
+get_values(0.45,1.6/(0.45^2),0.003)
+
+function loglike(theta::AbstractVector)
+    Lambda, G, mc = theta  
+    G = G / Lambda^2 # eu entendo melhor assim :D
+    M, mpi, fpi, cond, T_pc = get_values(Lambda, G, mc)
 
     # condensate uniform likelihood works to truncate the likelihood
     if cond < cond_lb || cond > cond_ub
@@ -86,9 +93,9 @@ end
 
 function priortransform(u::AbstractVector)
     theta = zeros(eltype(u), length(u))
-    L_min = 0.5
+    L_min = 0.4
     L_max = 0.7
-    GL2_min = 1.5
+    GL2_min = 1.2
     GL2_max = 3.5
     mc_min = 0.002
     mc_max = 0.006
@@ -123,7 +130,7 @@ function chain_to_csv(burnin=1)
     df = DataFrame(deserialize("njlparameters_chain.jls")[1])
     df = df[burnin:end, :]
     rename!(df, [:iter, :chain, :Lamb, :GL2, :mc, :w])
-    df[!,"T_pc"] = [get_Tpc(row.Lamb, row.GL2 / row.Lamb^2, row.mc) for row in eachrow(df)]
+    # df[!,"T_pc"] = [get_Tpc(row.Lamb, row.GL2 / row.Lamb^2, row.mc) for row in eachrow(df)]
     # df["Cond"] = [-cbrt(quarkcond(row.Lamb, row.GL2 / row.Lamb^2, row.mc)) for row in eachrow(df)]
     # df["mpi"] = [getmpi(solvegap(row.Lamb, row.GL2 / row.Lamb^2, row.mc), row.Lamb, row.GL2 / row.Lamb^2, row.mc) for row in eachrow(df)]
     # df["fpi"] = [fpieq(solvegap(row.Lamb, row.GL2 / row.Lamb^2, row.mc), row.Lamb) for row in eachrow(df)]

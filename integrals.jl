@@ -83,7 +83,7 @@ function getmpi(M, Lamb, G, mc)
     return sol.u[1]
 end
 
-function get_Tpc(Lamb,G,mc;steps=6,intervals=3)
+function get_Tpc(Lamb,G,mc;steps=10,intervals=5)
     Tmin = 0.0 
     Tmax = Lamb
     for i in 1:steps
